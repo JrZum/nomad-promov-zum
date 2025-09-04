@@ -23,6 +23,10 @@ RUN ls -la /app/dist/assets/ || echo "No assets directory"
 # Stage 2: Serve the application with Caddy
 FROM caddy:2.8-alpine AS production
 COPY --from=builder /app/dist /usr/share/caddy
+# Ensure compatibility with platforms that expect Caddyfile at /assets
+RUN mkdir -p /assets
+COPY Caddyfile /assets/Caddyfile
 COPY Caddyfile /etc/caddy/Caddyfile
 EXPOSE 80
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+# Explicitly use /assets/Caddyfile to match runtime expectations
+CMD ["caddy", "run", "--config", "/assets/Caddyfile", "--adapter", "caddyfile"]
