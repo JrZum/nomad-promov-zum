@@ -9,11 +9,11 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 8080
+      - 80
     environment:
       NODE_ENV: production
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
     proxy:
-      port: 8080
+      port: 80
       secure: true
