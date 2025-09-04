@@ -1,0 +1,35 @@
+:80 {
+	# Serve static files from /usr/share/caddy
+	root * /usr/share/caddy
+	
+	# Enable file server for static assets
+	file_server
+	
+	# Handle SPA routing - fallback to index.html for all non-file requests
+	try_files {path} {path}/ /index.html
+	
+	# Set proper headers for static assets
+	@static {
+		path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.eot
+	}
+	header @static Cache-Control "public, max-age=31536000, immutable"
+	
+	# Set proper content types
+	header *.js Content-Type "application/javascript; charset=utf-8"
+	header *.css Content-Type "text/css; charset=utf-8"
+	header *.html Content-Type "text/html; charset=utf-8"
+	
+	# Security headers
+	header X-Content-Type-Options nosniff
+	header X-Frame-Options DENY
+	header X-XSS-Protection "1; mode=block"
+	
+	# Enable gzip compression
+	encode gzip
+	
+	# Log access
+	log {
+		output stdout
+		format console
+	}
+}
