@@ -2,22 +2,28 @@
 	# Serve static files from /usr/share/caddy
 	root * /usr/share/caddy
 	
-	# Enable file server for static assets
-	file_server
-	
-	# Handle SPA routing - fallback to index.html for all non-file requests
-	try_files {path} {path}/ /index.html
-	
-	# Set proper headers for static assets
-	@static {
-		path *.js *.css *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.eot
-	}
-	header @static Cache-Control "public, max-age=31536000, immutable"
-	
-	# Set proper content types
+	# Set proper content types BEFORE file_server
 	header *.js Content-Type "application/javascript; charset=utf-8"
+	header *.mjs Content-Type "application/javascript; charset=utf-8"
 	header *.css Content-Type "text/css; charset=utf-8"
 	header *.html Content-Type "text/html; charset=utf-8"
+	
+	# Match static assets specifically (must come before try_files)
+	@static_files {
+		path *.js *.mjs *.css *.png *.jpg *.jpeg *.gif *.svg *.ico *.woff *.woff2 *.ttf *.eot *.map
+	}
+	
+	# Serve static files directly without try_files fallback
+	handle @static_files {
+		header Cache-Control "public, max-age=31536000, immutable"
+		file_server
+	}
+	
+	# Handle SPA routing - fallback to index.html for non-static requests only
+	handle {
+		try_files {path} {path}/ /index.html
+		file_server
+	}
 	
 	# Security headers
 	header X-Content-Type-Options nosniff
