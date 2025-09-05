@@ -16,9 +16,10 @@ RUN echo "Building with VITE_SUPABASE_URL: $VITE_SUPABASE_URL"
 
 RUN npm run build
 
-# Debug: List build output
-RUN ls -la /app/dist/
-RUN ls -la /app/dist/assets/ || echo "No assets directory"
+# Copy and run build fix script
+COPY fix-build.sh /app/fix-build.sh
+RUN chmod +x /app/fix-build.sh
+RUN /app/fix-build.sh
 
 # Stage 2: Serve the application with Caddy
 FROM caddy:2.8-alpine AS production
