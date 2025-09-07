@@ -2,10 +2,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { AdminUser } from "@/types/admin";
+import { adminService } from "@/services/adminService";
 
 interface AdminAuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  admin: AdminUser | null;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   verifyAuthentication: () => Promise<boolean>;
@@ -16,6 +19,7 @@ const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefin
 export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [admin, setAdmin] = useState<AdminUser | null>(null);
   const [lastVerification, setLastVerification] = useState<Date>(new Date());
 
   // Função de verificação que pode ser chamada sob demanda
@@ -99,24 +103,40 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       
       console.log("[AdminAuthContext] Iniciando login para:", email);
       
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password.trim(),
+      // Use the admin service that works with the custom admin system
+      const result = await adminService.login({ 
+        email: email.trim(), 
+        password: password.trim() 
       });
       
-      if (error) {
-        console.error("[AdminAuthContext] Erro no login:", error.message);
-        toast({
-          title: "Falha na autenticação",
-          description: error.message || "Credenciais inválidas",
-          variant: "destructive",
+      if (result.success && result.admin) {
+        console.log("[AdminAuthContext] Login bem-sucedido:", result.admin.email);
+        
+        setAdmin({
+          id: result.admin.id,
+          email: result.admin.email,
+          name: result.admin.name,
+          admin_type: (result.admin.admin_type as AdminUser['admin_type']) || 'admin',
+          permissions: (result.admin.permissions as AdminUser['permissions']) || [],
+          active: true
         });
-        return false;
+        setIsAuthenticated(true);
+        
+        // Store token for RLS policies if needed
+        if (result.token) {
+          localStorage.setItem('admin_token', result.token);
+        }
+        
+        return true;
       }
       
-      console.log("[AdminAuthContext] Login bem-sucedido");
-      setIsAuthenticated(true);
-      return true;
+      console.error("[AdminAuthContext] Falha no login:", result.error);
+      toast({
+        title: "Falha na autenticação",
+        description: result.error || "Credenciais inválidas",
+        variant: "destructive",
+      });
+      return false;
     } catch (error) {
       console.error("[AdminAuthContext] Erro durante login:", error);
       toast({
@@ -143,7 +163,11 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         return;
       }
       
+      // Clear admin data and token
+      localStorage.removeItem('admin_token');
       setIsAuthenticated(false);
+      setAdmin(null);
+      
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso",
@@ -161,7 +185,8 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
   return (
     <AdminAuthContext.Provider value={{ 
       isAuthenticated, 
-      isLoading, 
+      isLoading,
+      admin,
       login, 
       logout,
       verifyAuthentication 

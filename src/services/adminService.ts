@@ -13,6 +13,8 @@ export interface AdminLoginResponse {
     id: string;
     email: string;
     name?: string;
+    admin_type?: string;
+    permissions?: string[];
   };
 }
 
