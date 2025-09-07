@@ -341,10 +341,11 @@ RETURNS TABLE(
 BEGIN
     RETURN QUERY
     SELECT 
-        t.table_name::TEXT,
-        t.row_security::BOOLEAN,
+        c.relname::TEXT,
+        c.relrowsecurity::BOOLEAN,
         COALESCE(p.policy_count, 0)
-    FROM information_schema.tables t
+    FROM pg_class c
+    JOIN pg_namespace n ON c.relnamespace = n.oid
     LEFT JOIN (
         SELECT 
             schemaname||'.'||tablename as full_table_name,
@@ -352,10 +353,11 @@ BEGIN
         FROM pg_policies 
         WHERE schemaname = 'public'
         GROUP BY schemaname||'.'||tablename
-    ) p ON p.full_table_name = 'public.'||t.table_name
-    WHERE t.table_schema = 'public' 
-    AND t.table_name IN ('admins', 'admin_sessions', 'admin_logs', 'configuracao_campanha', 'participantes', 'numeros_sorte', 'vendas')
-    ORDER BY t.table_name;
+    ) p ON p.full_table_name = 'public.'||c.relname
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'r'
+      AND c.relname IN ('admins', 'admin_sessions', 'admin_logs', 'configuracao_campanha', 'participantes', 'numeros_sorte', 'vendas')
+    ORDER BY c.relname;
 END;
 $$ LANGUAGE plpgsql;
 
