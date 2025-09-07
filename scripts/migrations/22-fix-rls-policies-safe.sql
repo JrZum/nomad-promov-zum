@@ -25,8 +25,8 @@ RETURNS void AS $$
 BEGIN
     -- Check if table exists
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.tables 
-        WHERE table_schema = 'public' AND table_name = safe_create_policy.table_name
+        SELECT 1 FROM information_schema.tables ist
+        WHERE ist.table_schema = 'public' AND ist.table_name = safe_create_policy.table_name
     ) THEN
         RAISE NOTICE 'Table % does not exist, skipping policy %', table_name, policy_name;
         RETURN;
