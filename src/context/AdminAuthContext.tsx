@@ -28,15 +28,41 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       console.log("[AdminAuthContext] Verificando autenticação do administrador");
       
       setLastVerification(new Date());
-      // Verificar se há uma sessão ativa no Supabase Auth
-      const { data } = await supabase.auth.getSession();
-      const isValid = !!data.session;
-      
-      console.log("[AdminAuthContext] Resultado da verificação:", isValid ? "Sessão válida" : "Sessão inválida");
-      setIsAuthenticated(isValid);
-      return isValid;
+      // Verificar se há token admin válido
+      const token = localStorage.getItem('admin_token');
+      if (!token) {
+        console.log("[AdminAuthContext] Nenhum token encontrado");
+        setIsAuthenticated(false);
+        setAdmin(null);
+        return false;
+      }
+
+      // Verificar token usando o adminService
+      const result = await adminService.verifyToken(token);
+      if (result.success && result.admin) {
+        console.log("[AdminAuthContext] Token válido para:", result.admin.email);
+        setAdmin({
+          id: result.admin.id,
+          email: result.admin.email,
+          name: result.admin.name,
+          admin_type: 'admin', // Default type since verification doesn't return it
+          permissions: [], // Default permissions since verification doesn't return them
+          active: true
+        });
+        setIsAuthenticated(true);
+        return true;
+      } else {
+        console.log("[AdminAuthContext] Token inválido:", result.error);
+        localStorage.removeItem('admin_token');
+        setIsAuthenticated(false);
+        setAdmin(null);
+        return false;
+      }
     } catch (error) {
       console.error("[AdminAuthContext] Erro ao verificar autenticação:", error);
+      localStorage.removeItem('admin_token');
+      setIsAuthenticated(false);
+      setAdmin(null);
       return false;
     }
   }, []);
@@ -48,37 +74,20 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
       console.log("[AdminAuthContext] Realizando verificação inicial de autenticação");
       
       try {
-        const { data } = await supabase.auth.getSession();
-        const isValid = !!data.session;
-        setIsAuthenticated(isValid);
-        console.log("[AdminAuthContext] Verificação inicial:", isValid ? "Autenticado" : "Não autenticado");
+        await verifyAuthentication();
       } catch (error) {
         console.error("[AdminAuthContext] Erro na verificação inicial:", error);
         setIsAuthenticated(false);
+        setAdmin(null);
       } finally {
         setIsLoading(false);
       }
     };
     
     initialCheck();
-  }, []);
+  }, [verifyAuthentication]);
 
-  // Observer para eventos de autenticação
-  useEffect(() => {
-    console.log("[AdminAuthContext] Configurando observer de autenticação");
-    
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("[AdminAuthContext] Evento de autenticação:", event);
-        setIsAuthenticated(!!session);
-      }
-    );
-    
-    return () => {
-      console.log("[AdminAuthContext] Removendo observer de autenticação");
-      authListener.subscription.unsubscribe();
-    };
-  }, []);
+  // Observer não é necessário para autenticação personalizada
 
   // Configurando verificação periódica longa para validar sessão (a cada 30 minutos)
   useEffect(() => {
@@ -152,16 +161,7 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        toast({
-          title: "Erro ao fazer logout",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
+      console.log("[AdminAuthContext] Realizando logout");
       
       // Clear admin data and token
       localStorage.removeItem('admin_token');
