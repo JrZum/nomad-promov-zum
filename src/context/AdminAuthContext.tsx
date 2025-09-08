@@ -37,8 +37,10 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         return false;
       }
 
+      console.log("[AdminAuthContext] Chamando adminService.verifyToken...");
       // Verificar token usando o adminService
       const result = await adminService.verifyToken(token);
+      
       if (result.success && result.admin) {
         console.log("[AdminAuthContext] Token válido para:", result.admin.email);
         setAdmin({
@@ -59,7 +61,10 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
         return false;
       }
     } catch (error) {
-      console.error("[AdminAuthContext] Erro ao verificar autenticação:", error);
+      console.error("[AdminAuthContext] Erro crítico ao verificar autenticação:", error);
+      console.error("[AdminAuthContext] Stack trace:", error instanceof Error ? error.stack : 'Unknown error');
+      
+      // Remove token inválido mas não falha o contexto
       localStorage.removeItem('admin_token');
       setIsAuthenticated(false);
       setAdmin(null);
