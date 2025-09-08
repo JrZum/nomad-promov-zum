@@ -14,4 +14,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
     persistSession: true,
     autoRefreshToken: true,
   },
+  global: {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  },
 });
