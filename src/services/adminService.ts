@@ -31,9 +31,9 @@ export interface AdminVerificationResponse {
 export const adminService = {
   async login(loginData: AdminLoginData): Promise<AdminLoginResponse> {
     try {
-      const { data, error } = await supabase.rpc('admin_login_completo', {
-        p_email: loginData.email,
-        p_password: loginData.password
+      const { data, error } = await supabase.rpc('simple_admin_login', {
+        login_email: loginData.email,
+        login_password: loginData.password
       });
 
       if (error) {
@@ -68,8 +68,8 @@ export const adminService = {
 
   async verifyToken(token: string): Promise<AdminVerificationResponse> {
     try {
-      const { data, error } = await supabase.rpc('verificar_admin_token', {
-        p_token: token
+      const { data, error } = await supabase.rpc('simple_verify_admin_token', {
+        token_to_verify: token
       });
 
       if (error) {
