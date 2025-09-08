@@ -2,7 +2,9 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Index = () => {
+c
+  
+onst Index = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
